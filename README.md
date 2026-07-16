@@ -8,6 +8,7 @@
 
     <h1>Hello, World!</h1>
     <p>This is a simple paragraph of text on your new webpage.</p>
+    <a href="https://www.w3schools.com">Visit W3Schools</a>
 
 </body>
 </html>
