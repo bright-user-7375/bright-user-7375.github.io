@@ -1,1 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Guessing Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .game-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            font-size: 16px;
+        }
+        input[type="number"] {
+            width: 80px;
+            padding: 10px;
+            font-size: 18px;
+            border: 2px solid #ccc;
+            border-radius: 6px;
+            text-align: center;
+            margin-top: 15px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .message {
+            margin-top: 20px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .attempts {
+            font-size: 14px;
+            color: #888;
+            margin-top: 5px;
+        }
+        .reset-btn {
+            background-color: #008CBA;
+            margin-top: 15px;
+            display: none;
+        }
+        .reset-btn:hover {
+            background-color: #007B9A;
+        }
+    </style>
+</head>
+<body>
 
+<div class="game-container">
+    <h1>Guess My Number!</h1>
+    <p>I am thinking of a number between <b>1 and 100</b>.</p>
+    
+    <input type="number" id="userGuess" min="1" max="100" placeholder="0">
+    <button onclick="checkGuess()">Guess</button>
+    
+    <div class="message" id="feedbackMessage"></div>
+    <div class="attempts" id="attemptCount">Attempts: 0</div>
+    
+    <button class="reset-btn" id="resetButton" onclick="resetGame()">Play Again</button>
+</div>
+
+<script>
+    // Generate a random target number between 1 and 100
+    let targetNumber = Math.floor(Math.random() * 100) + 1;
+    let attempts = 0;
+
+    const guessInput = document.getElementById("userGuess");
+    const feedback = document.getElementById("feedbackMessage");
+    const attemptDisplay = document.getElementById("attemptCount");
+    const resetBtn = document.getElementById("resetButton");
+
+    function checkGuess() {
+        // Convert the input string into a valid number
+        const userGuess = Number(guessInput.value);
+
+        // Filter out empty or out-of-bounds inputs
+        if (!userGuess || userGuess < 1 || userGuess > 100) {
+            feedback.style.color = "red";
+            feedback.innerHTML = "Please enter a number between 1 and 100!";
+            return;
+        }
+
+        attempts++;
+        attemptDisplay.innerHTML = "Attempts: " + attempts;
+
+        // Core game logic comparison
+        if (userGuess === targetNumber) {
+            feedback.style.color = "green";
+            feedback.innerHTML = `🎉 Correct! The number was ${targetNumber}.`;
+            endGame();
+        } else if (userGuess > targetNumber) {
+            feedback.style.color = "orange";
+            feedback.innerHTML = "Too high! Try a lower number. 👇";
+        } else {
+            feedback.style.color = "orange";
+            feedback.innerHTML = "Too low! Try a higher number. 👆";
+        }
+
+        // Clear input field for the next guess
+        guessInput.value = "";
+    }
+
+    function endGame() {
+        guessInput.disabled = true;
+        resetBtn.style.display = "inline-block";
+    }
+
+    function resetGame() {
+        // Generate a new number and reset stats
+        targetNumber = Math.floor(Math.random() * 100) + 1;
+        attempts = 0;
+        
+        // Reset UI elements
+        attemptDisplay.innerHTML = "Attempts: 0";
+        feedback.innerHTML = "";
+        guessInput.value = "";
+        guessInput.disabled = false;
+        resetBtn.style.display = "none";
+    }
+</script>
+
+</body>
+</html>
