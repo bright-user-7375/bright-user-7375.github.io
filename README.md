@@ -1,350 +1,444 @@
+<!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Card Game Manillen- Slimme AI</title>
+    <title>Manillen voor 2 Spelers</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #2b7a0b;
-            color: white;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-        }
-        #game-board {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .hand {
-            display: flex;
-            gap: 10px;
-            min-height: 120px;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-        }
-        #table {
-            width: 400px;
-            height: 180px;
-            background: rgba(0, 0, 0, 0.4);
-            border-radius: 90px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 15px;
-            border: 2px solid #fff;
-            padding: 10px;
-        }
-        .played-card-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-        }
-        .player-label {
-            font-size: 12px;
-            background: rgba(0,0,0,0.6);
-            padding: 2px 6px;
-            border-radius: 4px;
-        }
-        .card {
-            width: 70px;
-            height: 100px;
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-            user-select: none;
-            transition: transform 0.2s, opacity 0.2s;
-        }
-        .card:hover { transform: translateY(-10px); }
-        .card.disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .card.on-table:hover { transform: none; cursor: default; }
-        .red { color: #d32f2f; }
-        .black { color: #212121; }
-        .info-panel {
-            background: #fff;
-            color: #333;
-            padding: 15px;
-            border-radius: 8px;
-            max-width: 500px;
-            margin: 0 auto;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        .scoreboard {
-            display: flex;
-            justify-content: space-around;
-            background: #eee;
-            padding: 10px;
-            border-radius: 5px;
-            font-weight: bold;
-            font-size: 18px;
-        }
-        .us { color: #2e7d32; }
-        .them { color: #c62828; }
-        button {
-            padding: 10px 15px;
-            font-size: 14px;
-            cursor: pointer;
-            background-color: #fbc02d;
-            border: none;
-            border-radius: 5px;
-            font-weight: bold;
-            align-self: center;
-        }
-        button:hover { background-color: #f9a825; }
-        #trump-display { font-size: 20px; font-weight: bold; }
+        body { font-family: Arial, sans-serif; background-color: #0b6623; color: white; text-align: center; margin: 0; padding: 20px; }
+        #game-container { max-width: 800px; margin: 0 auto; background: rgba(0, 0, 0, 0.3); padding: 20px; border-radius: 10px; position: relative; }
+        .hand { display: flex; justify-content: center; gap: 10px; min-height: 120px; margin: 15px 0; flex-wrap: wrap; }
+        .card { width: 70px; height: 105px; background: white; color: black; border-radius: 5px; display: flex; flex-direction: column; justify-content: space-between; padding: 5px; font-weight: bold; cursor: pointer; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); user-select: none; transition: transform 0.2s; }
+        .card:hover { transform: translateY(-5px); }
+        .card.red { color: red; }
+        .card.back { background: #b22222; border: 2px solid white; }
+        #table-area { height: 130px; border: 2px dashed rgba(255,255,255,0.5); border-radius: 8px; display: flex; justify-content: center; align-items: center; gap: 20px; margin: 20px 0; background: rgba(0,0,0,0.1); }
+        .info-panel { display: flex; justify-content: space-around; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 5px; margin-bottom: 15px; }
+        button { background: #ffcc00; border: none; padding: 10px 20px; font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 5px; margin: 5px; }
+        button:hover { background: #e6b800; }
+        
+        #menu-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
+        .menu-btn-container { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; justify-content: center; }
+        .suit-btn { background: white; color: black; padding: 15px 25px; font-size: 18px; }
+        .suit-btn.red { color: red; }
+        .pass-btn { background: #b22222; color: white; padding: 15px 25px; font-size: 18px; }
+        .pass-btn:hover { background: #8b0000; }
+        
+        .match-banner { background: #ffcc00; color: black; font-weight: bold; padding: 8px; border-radius: 5px; margin-bottom: 15px; font-size: 18px; }
     </style>
 </head>
 <body>
+<div id="game-container">
+    <!-- GEFIXT: Het dubbele woord 'Computer' is hier nu wegehaald -->
+    <div class="match-banner">
+        WEDSTRIJD STAND (EERSTE TOT 50): Jij: <span id="totaal-speler">0</span> | Computer: <span id="totaal-comp">0</span>
+    </div>
+
+    <!-- HIER STAAT HET VERNIEUWDE KEUZEMENU -->
+    <div id="menu-overlay">
+        <h2 id="menu-title">Kies Troef of Pass</h2>
+        <p id="menu-text">Jij mag als eerste de troef bepalen voor dit spel.</p>
+        <div id="menu-buttons" class="menu-btn-container">
+            <!-- Dynamisch gevuld via Javascript -->
+        </div>
+    </div>
+
+    <h1>Manillen (2 Spelers)</h1>
     <div class="info-panel">
-        <div class="scoreboard">
-            <div class="us">Wij (Jij + Partner): <span id="score-us">0</span> pnt</div>
-            <div class="them">Zij (Tegenstanders): <span id="score-them">0</span> pnt</div>
-        </div>
-        <div id="trump-display">Troef: Nog niet gekozen</div>
-        <p id="status-text" style="font-weight: bold; font-size: 16px;">Klik op 'Nieuw Spel' om te beginnen.</p>
-        <button onclick="startGame()">Nieuw Spel</button>
+        <div>Troef: <span id="troef-display" style="font-weight:bold; color:#ffcc00;">-</span> <span id="multi-display" style="color:#ff4444; font-weight:bold; margin-left:5px;"></span></div>
+        <div>Dit spel Speler: <span id="score-speler">0</span></div>
+        <div>Dit spel Computer: <span id="score-comp">0</span></div>
+        <div>In deck: <span id="deck-count">32</span></div>
     </div>
-    <div id="game-board">
-        <div>
-            <p>De Tafel</p>
-            <div id="table"></div>
-        </div>
-        <div>
-            <p>Jouw Hand</p>
-            <div id="player-hand" class="hand"></div>
-        </div>
-    </div>
-    <script>
-        const suits = ['♠', '♥', '♦', '♣'];
-        const ranks = [
-            { name: '7', value: 0, power: 1 }, { name: '8', value: 0, power: 2 }, { name: '9', value: 0, power: 3 },
-            { name: 'J', value: 1, power: 4 }, { name: 'Q', value: 2, power: 5 }, { name: 'K', value: 3, power: 6 },
-            { name: 'A', value: 4, power: 7 }, { name: '10', value: 5, power: 8 }
-        ];
-        const playerNames = ["Jij", "Linker AI", "Je Partner", "Rechter AI"];
-        let deck = [];
-        let hands = [[], [], [], []]; 
-        let tableCards = []; 
-        let trumpSuit = '';
-        let currentPlayer = 0; 
-        let scoreUs = 0;
-        let scoreThem = 0;
-        let trickInProgress = false;
-        function createAndShuffleDeck() {
-            deck = [];
-            for (let suit of suits) {
-                for (let rank of ranks) {
-                    deck.push({ suit: suit, rank: rank.name, value: rank.value, power: rank.power });
-                }
-            }
-            for (let i = deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [deck[i], deck[j]] = [deck[j], deck[i]];
-            }
+    <div>Computer Hand:</div>
+    <div id="computer-hand" class="hand"></div>
+    <div id="table-area"><span>Leg een kaart...</span></div>
+    <div>Jouw Hand:</div>
+    <div id="player-hand" class="hand"></div>
+    <p id="message"></p>
+    <button id="next-btn" style="display:none;" onclick="startVolgendeSlag()">Volgende Slag</button>
+    <button id="restart-btn" style="display:none; background: #ff4444; color: white;" onclick="initGame()">Volgende Spel</button>
+</div>
+<script>
+    const suits = ['Harten', 'Ruiten', 'Klaveren', 'Schoppen'];
+    const suitSymbols = {'Harten': '♥', 'Ruiten': '♦', 'Klaveren': '♣', 'Schoppen': '♠'};
+    const values = [
+        { name: '7', rank: 1, points: 0 }, { name: '8', rank: 2, points: 0 }, { name: '9', rank: 3, points: 0 },
+        { name: 'Boer', rank: 4, points: 1 }, { name: 'Dame', rank: 5, points: 2 }, { name: 'Heer', rank: 6, points: 3 },
+        { name: 'Aas', rank: 7, points: 4 }, { name: '10', rank: 8, points: 5 }
+    ];
+
+    let totaalSpeler = 0;
+    let totaalComputer = 0;
+
+    let deck = [], playerHand = [], computerHand = [], currentTroef = '';
+    let playerPoints = 0, computerPoints = 0, turn = 'player', wieBegonDeSlag = 'player';
+    let tableCardPlayer = null, tableCardComp = null, leadingSuit = null;
+    
+    // NIEUW: Houdt bij wie troef koos en wat de inzetvermenigvuldiger is
+    let wieKloosTroef = 'player';
+    let scoreMultiplier = 1; 
+
+    function initGame() {
+        deck = []; playerPoints = 0; computerPoints = 0; scoreMultiplier = 1;
+        if (totaalSpeler >= 50 || totaalComputer >= 50) { totaalSpeler = 0; totaalComputer = 0; }
+
+        suits.forEach(suit => { values.forEach(val => { deck.push({ suit, name: val.name, rank: val.rank, points: val.points }); }); });
+        deck.sort(() => Math.random() - 0.5);
+        playerHand = deck.splice(0, 8); computerHand = deck.splice(0, 8);
+        updateUI();
+
+        document.getElementById('score-speler').innerText = playerPoints;
+        document.getElementById('score-comp').innerText = computerPoints;
+        document.getElementById('totaal-speler').innerText = totaalSpeler;
+        document.getElementById('totaal-comp').innerText = totaalComputer;
+        document.getElementById('deck-count').innerText = deck.length;
+        document.getElementById('multi-display').innerText = "";
+        
+        // FIX: Verberg de volgende/herstartknop ALTIJD direct bij de start van een nieuw spel
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('restart-btn').style.display = 'none';
+        
+        turn = 'player'; wieBegonDeSlag = 'player';
+        toonTroefMenu();
+    }
+
+    function toonTroefMenu() {
+        document.getElementById('menu-overlay').style.display = 'flex';
+        document.getElementById('menu-title').innerText = "Kies Troef of Pass";
+        document.getElementById('menu-text').innerText = "Jij mag de troef bepalen voor dit spel.";
+        
+        const container = document.getElementById('menu-buttons');
+        container.innerHTML = `
+            <button class="suit-btn red" onclick="kiesTroef('Harten')">Harten ♥</button>
+            <button class="suit-btn red" onclick="kiesTroef('Ruiten')">Ruiten ♦</button>
+            <button class="suit-btn" onclick="kiesTroef('Klaveren')">Klaveren ♣</button>
+            <button class="suit-btn" onclick="kiesTroef('Schoppen')">Schoppen ♠</button>
+            <button class="pass-btn" onclick="kiesTroef('Pass')">Passen (Computer kiest)</button>
+        `;
+    }
+
+    function kiesTroef(keuze) {
+        if (keuze === 'Pass') {
+            currentTroef = suits[Math.floor(Math.random() * suits.length)];
+            wieKloosTroef = 'computer';
+            setMessage(`Jij paste. De computer heeft ${currentTroef} gekozen.`);
+            setTimeout(faseTegenSpeler, 800);
+        } else {
+            currentTroef = keuze;
+            wieKloosTroef = 'player';
+            setMessage(`Je hebt ${currentTroef} als troef gekozen.`);
+            setTimeout(faseTegenComputer, 800);
         }
-        function startGame() {
-            createAndShuffleDeck();
-            trumpSuit = suits[Math.floor(Math.random() * suits.length)];
-            const trumpColor = (trumpSuit === '♥' || trumpSuit === '♦') ? 'red' : 'black';
-            document.getElementById('trump-display').innerHTML = `Troef: <span class="${trumpColor}">${trumpSuit}</span>`;
-            hands[0] = deck.slice(0, 8);
-            hands[1] = deck.slice(8, 16);
-            hands[2] = deck.slice(16, 24);
-            hands[3] = deck.slice(24, 32);
-            hands[0].sort((a, b) => a.suit.localeCompare(b.suit) || a.power - b.power);
-            scoreUs = 0; scoreThem = 0;
-            tableCards = [];
-            currentPlayer = 0;
-            trickInProgress = true;
-            updateScoreboard();
-            renderTable();
-            playTurn();
+        document.getElementById('troef-display').innerText = `${currentTroef} ${suitSymbols[currentTroef]}`;
+    }
+
+    // De computer mag reageren op JOUW troefkeuze
+    function faseTegenComputer() {
+        // AI check: als de computer 3 of meer hoge kaarten (rank 7 of 8) heeft, gaat hij "Tegen"
+        let hogeKaarten = computerHand.filter(c => c.rank >= 7 || c.suit === currentTroef);
+        
+        if (hogeKaarten.length >= 4) {
+            scoreMultiplier = 2;
+            document.getElementById('multi-display').innerText = "(TEGEN! ×2)";
+            setMessage(`De computer roept: TEGEN! De inzet verdubbelt.`);
+            // Geef speler kans op hertegen
+            faseHertegenSpeler();
+        } else {
+            startHetSpel();
         }
-        function isValidPlay(cardToPlay, hand, tableOnlyCards, trump) {
-            if (tableOnlyCards.length === 0) return true;
-            const leadSuit = tableOnlyCards[0].suit;
-            const hasLeadSuit = hand.some(c => c.suit === leadSuit);
-            const hasTrump = hand.some(c => c.suit === trump);
-            if (hasLeadSuit) return cardToPlay.suit === leadSuit;
-            if (hasTrump) return cardToPlay.suit === trump;
-            return true;
-        }
-        // Helper functie om te berekenen wie er momenteel de winnende kaart heeft liggen
-        function getWinningPlay(plays, trump) {
-            if (plays.length === 0) return null;
-            let leadSuit = plays[0].card.suit;
-            let winningPlay = plays[0];
-            for (let i = 1; i < plays.length; i++) {
-                let play = plays[i];
-                let winIsTrump = winningPlay.card.suit === trump;
-                let playIsTrump = play.card.suit === trump;
-                if (playIsTrump && !winIsTrump) {
-                    winningPlay = play; 
-                } else if (playIsTrump && winIsTrump) {
-                    if (play.card.power > winningPlay.card.power) winningPlay = play; 
-                } else if (!playIsTrump && !winIsTrump) {
-                    if (play.card.suit === leadSuit) {
-                        if (winningPlay.card.suit !== leadSuit || play.card.power > winningPlay.card.power) {
-                            winningPlay = play; 
-                        }
-                    }
-                }
-            }
-            return winningPlay;
-        }
-        // Logica voor de AI om de best mogelijke kaart te kiezen
-        function chooseSmartCard(validCards, aiPlayerIndex) {
-            if (tableCards.length === 0) {
-                // Eerste speler: speel gewoon hoogste power kaart uit (basis strategie)
-                return validCards.reduce((prev, curr) => (prev.power > curr.power) ? prev : curr);
-            }
-            const winningPlay = getWinningPlay(tableCards, trumpSuit);
-            const partnerIndex = (aiPlayerIndex + 2) % 4;
-            const isPartnerWinning = (winningPlay.player === partnerIndex);
-            if (isPartnerWinning) {
-                // Partner wint: gooi hoogste punten (waarde) om hem te spekken, bij gelijke punten de laagste power
-                return validCards.reduce((prev, curr) => {
-                    if (curr.value > prev.value) return curr;
-                    if (curr.value === prev.value && curr.power < prev.power) return curr;
-                    return prev;
-                });
+    }
+
+    // Jij mag reageren op de troefkeuze van de computer
+    function faseTegenSpeler() {
+        document.getElementById('menu-overlay').style.display = 'flex';
+        document.getElementById('menu-title').innerText = "Computer koos troef!";
+        document.getElementById('menu-text').innerText = `De computer heeft ${currentTroef} gekozen. Wil jij "Tegen" roepen?`;
+        
+        const container = document.getElementById('menu-buttons');
+        container.innerHTML = `
+            <button class="pass-btn" style="background:#0b6623;" onclick="reageerTegen(true)">TEGEN (×2)</button>
+            <button class="suit-btn" onclick="reageerTegen(false)">Passen (Normale inzet)</button>
+        `;
+    }
+
+    function reageerTegen(wilTegen) {
+        if (wilTegen) {
+            scoreMultiplier = 2;
+            document.getElementById('multi-display').innerText = "(TEGEN! ×2)";
+            setMessage(`Jij roept TEGEN! De computer overweegt hertegen...`);
+            
+            // Computer AI checkt voor Hertegen (als hand super sterk is)
+            let superSterk = computerHand.filter(c => c.rank === 8 || (c.suit === currentTroef && c.rank >= 6));
+            if (superSterk.length >= 3) {
+                setTimeout(() => {
+                    scoreMultiplier = 4;
+                    document.getElementById('multi-display').innerText = "(HERTEGEN!! ×4)";
+                    setMessage(`De computer roept: HERTEGEN!! De punten tellen maal 4!`);
+                    startHetSpel();
+                }, 1000);
             } else {
-                // Tegenstander wint: kunnen we de slag winnen met een van onze geldige kaarten?
-                let winningCards = validCards.filter(c => {
-                    let testTable = [...tableCards, { card: c, player: aiPlayerIndex }];
-                    return getWinningPlay(testTable, trumpSuit).player === aiPlayerIndex;
-                });
-                if (winningCards.length > 0) {
-                    // We kunnen winnen! Speel de ZWAKSTE kaart die toch sterk genoeg is om te winnen
-                    return winningCards.reduce((prev, curr) => (prev.power < curr.power) ? prev : curr);
-                } else {
-                    // We kunnen NIET winnen. Gooi de kaart weg met de minste punten en minste power (vuilbak)
-                    return validCards.reduce((prev, curr) => {
-                        if (curr.value < prev.value) return curr;
-                        if (curr.value === prev.value && curr.power < prev.power) return curr;
-                        return prev;
-                    });
+                setTimeout(startHetSpel, 800);
+            }
+        } else {
+            startHetSpel();
+        }
+    }
+
+    function faseHertegenSpeler() {
+        document.getElementById('menu-overlay').style.display = 'flex';
+        document.getElementById('menu-title').innerText = "De computer ging Tegen!";
+        document.getElementById('menu-text').innerText = `De computer daagt je uit. Wil jij "Hertegen" roepen voor x4 punten?`;
+        
+        const container = document.getElementById('menu-buttons');
+        container.innerHTML = `
+            <button class="pass-btn" style="background:#ffcc00; color:black;" onclick="reageerHertegen(true)">HERTEGEN (×4)</button>
+            <button class="suit-btn" onclick="reageerHertegen(false)">Passen</button>
+        `;
+    }
+
+    function reageerHertegen(wilHertegen) {
+        if (wilHertegen) {
+            scoreMultiplier = 4;
+            document.getElementById('multi-display').innerText = "(HERTEGEN!! ×4)";
+            setMessage(`Jij roept HERTEGEN! De inzet staat op vierdubbel!`);
+        }
+        startHetSpel();
+    }
+
+    function startHetSpel() {
+        document.getElementById('menu-overlay').style.display = 'none';
+        updateUI();
+    }
+
+    function deelKaarten() {
+        playerHand = deck.splice(0, 8); computerHand = deck.splice(0, 8);
+        document.getElementById('score-speler').innerText = playerPoints;
+        document.getElementById('score-comp').innerText = computerPoints;
+        document.getElementById('deck-count').innerText = deck.length;
+        document.getElementById('next-btn').style.display = 'none';
+        updateUI();
+    }
+
+    function getGeldigeKaarten(hand, tegenstanderKaart) {
+        // Als je zelf de eerste kaart legt, mag je alles spelen
+        if (!tegenstanderKaart || !leadingSuit) {
+            return hand;
+        }
+
+        // 1. Probeer de gevraagde kleur te volgen
+        let dezelfdeKleur = hand.filter(c => c.suit === leadingSuit);
+        if (dezelfdeKleur.length > 0) {
+            // VERPLICHT OVERSTAG GAAN: Als je een hogere kaart hebt in dezelfde kleur, MOET je die spelen
+            let hogereKaarten = dezelfdeKleur.filter(c => c.rank > tegenstanderKaart.rank);
+            if (hogereKaarten.length > 0) {
+                return hogereKaarten; // Je bent verplicht om hoger te spelen
+            }
+            return dezelfdeKleur; // Je kan niet hoger, maar moet wel de kleur volgen
+        }
+
+        // 2. Kan je de kleur niet volgen? Dan moet je verplicht troeven (kopen)
+        let troefKaarten = hand.filter(c => c.suit === currentTroef);
+        if (troefKaarten.length > 0) {
+            // Als de tegenstander al troef heeft gelegd, moet je proberen over te troeven
+            if (tegenstanderKaart.suit === currentTroef) {
+                let hogereTroeven = troefKaarten.filter(c => c.rank > tegenstanderKaart.rank);
+                if (hogereTroeven.length > 0) {
+                    return hogereTroeven; // Verplicht overtroeven
                 }
             }
+            return troefKaarten; // Gewoon kopen
         }
-        function playTurn() {
-            if (tableCards.length === 4) {
-                setTimeout(resolveTrick, 1500); 
-                return;
-            }
-            if (currentPlayer === 0) {
-                document.getElementById('status-text').innerText = "Jij bent aan de beurt. Speel een kaart.";
-                renderHand();
-                trickInProgress = false; 
-                return;
-            }
-            document.getElementById('status-text').innerText = `${playerNames[currentPlayer]} denkt na...`; 
-            setTimeout(() => {
-                let aiHand = hands[currentPlayer];
-                let justTableCards = tableCards.map(t => t.card);
-                let validCards = aiHand.filter(c => isValidPlay(c, aiHand, justTableCards, trumpSuit));
-                // Roep de nieuwe slimme hersens aan!
-                let chosenCard = chooseSmartCard(validCards, currentPlayer);
-                hands[currentPlayer] = aiHand.filter(c => c !== chosenCard);
-                tableCards.push({ card: chosenCard, player: currentPlayer });
-                renderTable();
-                currentPlayer = (currentPlayer + 1) % 4;
-                playTurn();
-            }, 1000); 
+
+        // 3. Geen kleur en geen troef? Dan mag je alles wegsmijten (brieven)
+        return hand;
+    }
+
+    function playCard(index) {
+        if (turn !== 'player' || tableCardPlayer !== null) return;
+        const card = playerHand[index];
+        const geldige = getGeldigeKaarten(playerHand, tableCardComp);
+        if (!geldige.some(c => c.suit === card.suit && c.name === card.name)) {
+            setMessage('Ongeldige zet! Volg de kleur of koop met troef.');
+            return;
         }
-        function playCard(index) {
-            if (trickInProgress || currentPlayer !== 0 || tableCards.length >= 4) return;
-            const cardToPlay = hands[0][index];
-            const justTableCards = tableCards.map(t => t.card);
-            if (!isValidPlay(cardToPlay, hands[0], justTableCards, trumpSuit)) {
-                alert("Ongeldige zet! Bekennen of troeven is verplicht.");
-                return;
-            }
-            trickInProgress = true;
-            const playedCard = hands[0].splice(index, 1)[0];
-            tableCards.push({ card: playedCard, player: 0 });
-            renderHand();
-            renderTable();
-            currentPlayer = 1; 
-            playTurn();
-        }
-        function resolveTrick() {
-            const winningPlay = getWinningPlay(tableCards, trumpSuit);
-            let trickPoints = tableCards.reduce((sum, play) => sum + play.card.value, 0);
-            const winnerIndex = winningPlay.player;
-            if (winnerIndex === 0 || winnerIndex === 2) {
-                scoreUs += trickPoints;
+        if (!tableCardPlayer && !tableCardComp) { leadingSuit = card.suit; wieBegonDeSlag = 'player'; }
+        tableCardPlayer = card; playerHand.splice(index, 1); updateUI();
+        if (tableCardComp === null) { turn = 'computer'; setTimeout(computerTurn, 600); } else { evalSlag(); }
+    }
+
+    function computerTurn() {
+        if (computerHand.length === 0) return;
+        
+        // Haal alle kaarten op die de computer MAG leggen volgens de volgplicht
+        let geldigeKaarten = getGeldigeKaarten(computerHand, tableCardPlayer);
+        if (!geldigeKaarten || geldigeKaarten.length === 0) geldigeKaarten = computerHand;
+        
+        let gekozenKaart = null;
+
+        // SCENARIO 1: De computer opent de slag (mag als eerste leggen)
+        if (tableCardPlayer === null) {
+            // Sorteer van hoge rank naar lage rank
+            let gesorteerd = [...geldigeKaarten].sort((a, b) => b.rank - a.rank);
+            
+            // Probeer eerst een hoge niet-troef kaart te spelen om punten te pakken
+            let hogeNietTroef = gesorteerd.find(c => c.suit !== currentTroef && c.rank >= 7);
+            if (hogeNietTroef) {
+                gekozenKaart = hogeNietTroef;
             } else {
-                scoreThem += trickPoints;
+                // Anders gewoon de hoogste kaart die hij heeft
+                gekozenKaart = gesorteerd[0];
             }
-            document.getElementById('status-text').innerText = `${playerNames[winnerIndex]} wint de slag met ${trickPoints} punten!`;
-            updateScoreboard();
-            currentPlayer = winnerIndex;
-            setTimeout(() => {
-                tableCards = []; 
-                renderTable();
-                if (hands[0].length === 0 && hands[1].length === 0) {
-                    document.getElementById('status-text').innerText = `Ronde afgelopen! Wij: ${scoreUs} | Zij: ${scoreThem}`;
+            
+            leadingSuit = gekozenKaart.suit;
+            wieBegonDeSlag = 'computer';
+        } 
+        // SCENARIO 2: De computer moet reageren op jouw kaart
+        else {
+            // Filter de kaarten die jouw kaart kunnen verslaan
+            let winnendeKaarten = geldigeKaarten.filter(c => {
+                if (c.suit === tableCardPlayer.suit) return c.rank > tableCardPlayer.rank;
+                if (c.suit === currentTroef && tableCardPlayer.suit !== currentTroef) return true;
+                return false;
+            });
+
+            if (winnendeKaarten.length > 0) {
+                // Tactisch: Win de slag met een zo LAAG mogelijke kaart (zuinig spelen)
+                winnendeKaarten.sort((a, b) => a.rank - b.rank);
+                gekozenKaart = winnendeKaarten[0];
+            } else {
+                // Hij kan niet winnen: Gooi een zo laag mogelijke kaart weg (brieven)
+                // Sorteer op punten (0 punten eerst), daarna op rank (laagste rank eerst)
+                let verliezendeKaarten = [...geldigeKaarten].sort((a, b) => {
+                    if (a.points !== b.points) return a.points - b.points;
+                    return a.rank - b.rank;
+                });
+                gekozenKaart = verliezendeKaarten[0];
+            }
+        }
+
+        // Zoek de exacte index in de echte hand om de kaart correct te verwijderen
+        const echteIndex = computerHand.findIndex(c => c.suit === gekozenKaart.suit && c.name === gekozenKaart.name);
+        
+        tableCardComp = computerHand[echteIndex];
+        computerHand.splice(echteIndex, 1);
+        updateUI();
+
+        if (tableCardPlayer === null) {
+            turn = 'player';
+            setMessage('De computer is uitgekomen. Jouw beurt!');
+        } else {
+            evalSlag();
+        }
+    }
+
+    function evalSlag() {
+        if (!tableCardPlayer || !tableCardComp) return;
+        let slagWinnaar = 'player', pValue = tableCardPlayer.rank, cValue = tableCardComp.rank;
+        if (tableCardPlayer.suit === tableCardComp.suit) {
+            if (cValue > pValue) slagWinnaar = 'computer';
+        } else {
+            if (tableCardComp.suit === currentTroef) slagWinnaar = 'computer';
+            else if (tableCardPlayer.suit === currentTroef) slagWinnaar = 'player';
+            else slagWinnaar = wieBegonDeSlag;
+        }
+        let puntenSlag = (tableCardPlayer.points || 0) + (tableCardComp.points || 0);
+        if (slagWinnaar === 'player') { playerPoints += puntenSlag; turn = 'player'; setMessage(`Jij wint (+${puntenSlag} ptn)!`); }
+        else { computerPoints += puntenSlag; turn = 'computer'; setMessage(`Computer wint (+${puntenSlag} ptn)!`); }
+        document.getElementById('score-speler').innerText = playerPoints;
+        document.getElementById('score-comp').innerText = computerPoints;
+        updateUI();
+    }
+
+    function startVolgendeSlag() {
+        tableCardPlayer = null; tableCardComp = null; leadingSuit = null;
+        document.getElementById('next-btn').style.display = 'none';
+        document.getElementById('restart-btn').style.display = 'none';
+
+        if (playerHand.length === 0 && computerHand.length === 0) {
+            if (deck.length > 0) {
+                setMessage('Volgende 16 kaarten worden gedeeld...');
+                document.getElementById('table-area').innerHTML = '<span>Nieuwe kaarten onderweg...</span>';
+                setTimeout(() => { deelKaarten(); if (turn === 'computer') setTimeout(computerTurn, 600); else setMessage('Nieuwe kaarten! Jij mag uitkomen.'); }, 1000);
+                return;
+            } else {
+                // EINDE VAN DE 32 KAARTEN: Bereken de score met de scoreMultiplier (×2 of ×4)
+                let verdiendePunten = 0;
+                
+                if (playerPoints > 30) {
+                    verdiendePunten = (playerPoints - 30) * scoreMultiplier;
+                    totaalSpeler += verdiendePunten;
+                    setMessage(`Spel voorbij! Jij behaalde ${playerPoints} punten. Met de vermenigvuldiger (×${scoreMultiplier}) krijg jij ${verdiendePunten} punten op het scorebord!`);
+                } else if (computerPoints > 30) {
+                    // FIX: De scoreMultiplier wordt nu ook correct toegepast op de computer!
+                    verdiendePunten = (computerPoints - 30) * scoreMultiplier;
+                    totaalComputer += verdiendePunten;
+                    setMessage(`Spel voorbij! Computer behaalde ${computerPoints} punten. Met de vermenigvuldiger (×${scoreMultiplier}) krijgt de computer ${verdiendePunten} punten op het scorebord!`);
                 } else {
-                    playTurn(); 
+                    setMessage(`Spel voorbij! Exact 30-30 gelijkspel. Niemand krijgt punten.`);
                 }
-            }, 2500); 
+
+                // Update direct de grote wedstrijd stand bovenin
+                document.getElementById('totaal-speler').innerText = totaalSpeler;
+                document.getElementById('totaal-comp').innerText = totaalComputer;
+
+                // CHECK TOERNOOI WINNAAR (Eerste tot 50)
+                if (totaalSpeler >= 50) {
+                    setMessage(`HOERA! Je hebt de kaap van 50 punten bereikt en wint de volledige wedstrijd met ${totaalSpeler} vs ${totaalComputer}!`);
+                    document.getElementById('restart-btn').innerText = "Nieuwe Wedstrijd Starten";
+                } else if (totaalComputer >= 50) {
+                    setMessage(`Helaas! De computer heeft de kaap van 50 punten bereikt en wint de wedstrijd met ${totaalComputer} vs ${totaalSpeler}.`);
+                    document.getElementById('restart-btn').innerText = "Nieuwe Wedstrijd Starten";
+                } else {
+                    document.getElementById('restart-btn').innerText = "Volgende Spel Spelen";
+                }
+                
+                document.getElementById('restart-btn').style.display = 'inline-block';
+                updateUI(); 
+                return;
+            }
         }
-        function renderHand() {
-            const handDiv = document.getElementById('player-hand');
-            handDiv.innerHTML = '';
-            const justTableCards = tableCards.map(t => t.card);
-            hands[0].forEach((card, index) => {
-                const cardEl = document.createElement('div');
-                const isRed = card.suit === '♥' || card.suit === '♦';
-                const canPlay = isValidPlay(card, hands[0], justTableCards, trumpSuit);
-                cardEl.className = `card ${isRed ? 'red' : 'black'} ${canPlay && !trickInProgress && currentPlayer === 0 ? '' : 'disabled'}`;
-                cardEl.innerText = `${card.rank}${card.suit}`;
-                cardEl.onclick = () => { if(canPlay) playCard(index); };
-                handDiv.appendChild(cardEl);
-            });
+        updateUI();
+        if (turn === 'computer') setTimeout(computerTurn, 600);
+    }
+
+    function createCardElement(card, isHidden = false, onClick = null) {
+        const div = document.createElement('div');
+        if (isHidden) { div.className = 'card back'; return div; }
+        div.className = `card ${(card.suit === 'Harten' || card.suit === 'Ruiten') ? 'red' : ''}`;
+        div.innerHTML = `<div>${card.name}<br>${suitSymbols[card.suit]}</div><div style="font-size:24px; text-align:center;">${suitSymbols[card.suit]}</div><div style="text-align:right;">${card.name}</div>`;
+        if (onClick) div.onclick = onClick;
+        return div;
+    }
+
+    function updateUI() {
+        const pHandEl = document.getElementById('player-hand'); pHandEl.innerHTML = '';
+        playerHand.forEach((card, index) => { pHandEl.appendChild(createCardElement(card, false, () => playCard(index))); });
+        const cHandEl = document.getElementById('computer-hand'); cHandEl.innerHTML = '';
+        computerHand.forEach(() => { cHandEl.appendChild(createCardElement(null, true)); });
+        const tableArea = document.getElementById('table-area'); tableArea.innerHTML = '';
+        
+        if (tableCardPlayer) tableArea.appendChild(createCardElement(tableCardPlayer));
+        if (tableCardComp) tableArea.appendChild(createCardElement(tableCardComp));
+        
+        if (tableCardPlayer && tableCardComp) { 
+            document.getElementById('next-btn').style.display = 'inline-block'; 
+        } else {
+            document.getElementById('next-btn').style.display = 'none';
+            if (!tableCardPlayer && !tableCardComp) {
+                if (playerHand.length > 0 || computerHand.length > 0 || deck.length > 0) {
+                    const span = document.createElement('span'); 
+                    span.innerText = turn === 'player' ? 'Jouw beurt om uit te komen' : 'Computer denkt...';
+                    tableArea.appendChild(span);
+                } else {
+                    tableArea.innerHTML = '<span>Spel afgelopen</span>';
+                }
+            }
         }
-        function renderTable() {
-            const tableDiv = document.getElementById('table');
-            tableDiv.innerHTML = '';
-            tableCards.forEach(play => {
-                const container = document.createElement('div');
-                container.className = 'played-card-container';
-                const cardEl = document.createElement('div');
-                const isRed = play.card.suit === '♥' || play.card.suit === '♦';
-                cardEl.className = `card on-table ${isRed ? 'red' : 'black'}`;
-                cardEl.innerText = `${play.card.rank}${play.card.suit}`;
-                const labelEl = document.createElement('div');
-                labelEl.className = 'player-label';
-                labelEl.innerText = playerNames[play.player];
-                container.appendChild(cardEl);
-                container.appendChild(labelEl);
-                tableDiv.appendChild(container);
-            });
-        }
-        function updateScoreboard() {
-            document.getElementById('score-us').innerText = scoreUs;
-            document.getElementById('score-them').innerText = scoreThem;
-        }
-    </script>
+        document.getElementById('deck-count').innerText = deck.length;
+    }
+
+    function setMessage(msg) { document.getElementById('message').innerText = msg; }
+    window.onload = initGame;
+</script>
 </body>
 </html>
-
